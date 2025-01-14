@@ -73,34 +73,6 @@ class _HalamanBerandaScreenState extends State<HalamanBerandaScreen> {
               padding: EdgeInsets.all(20),
               child: Column(
                 children: [
-                  Card(
-                    elevation: 5,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.all(15),
-                      child: Column(
-                        children: [
-                          Text(
-                            username,
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 5),
-                          Text(
-                            email,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                   SizedBox(height: 20),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),

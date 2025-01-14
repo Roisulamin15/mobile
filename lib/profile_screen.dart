@@ -1,3 +1,4 @@
+import 'package:capstonemobile/update_profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -62,6 +63,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  // Fungsi untuk memperbarui profil setelah berhasil diperbarui di UpdateProfileScreen
+  void updateProfile(String updatedUsername, String updatedEmail) {
+    setState(() {
+      username = updatedUsername;
+      email = updatedEmail;
+    });
+  }
+
   Future<void> deleteAccount() async {
     if (userId == null || userId!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -91,11 +100,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (confirm == true) {
       try {
         final url = 'http://192.168.199.125:3000/routes/login/delete/$userId';
-        print('Attempting to delete account...');
-        print('Delete URL: $url');
-        print('UserID: $userId');
-        print('Token: $token');
-
         final response = await http.delete(
           Uri.parse(url),
           headers: {
@@ -103,9 +107,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             'Content-Type': 'application/json',
           },
         );
-
-        print('Response status: ${response.statusCode}');
-        print('Response body: ${response.body}');
 
         if (response.statusCode == 200) {
           final prefs = await SharedPreferences.getInstance();
@@ -120,7 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // Arahkan pengguna ke halaman login setelah penghapusan akun
           Navigator.of(context).pushNamedAndRemoveUntil(
             '/login', 
-            (Route<dynamic> route) => false, // Menghapus semua halaman sebelumnya dari stack
+            (Route<dynamic> route) => false, 
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -131,7 +132,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
       } catch (e) {
-        print('Error deleting account: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Terjadi kesalahan: $e'),
@@ -142,7 +142,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Rest of the code remains the same...
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -152,77 +151,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
           icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          'Info Profile',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: Text('Info Profile'),
         centerTitle: true,
       ),
-      body: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFB3E5FC), Color(0xFF0288D1)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: CircleAvatar(
-                  radius: 60,
-                  backgroundImage: AssetImage('assets/profile.jpg'),
-                  backgroundColor: Colors.transparent,
-                ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
+        child: Column(
+          children: [
+            Center(
+              child: CircleAvatar(
+                radius: 60,
+                backgroundImage: AssetImage('assets/profile.jpg'),
+                backgroundColor: Colors.transparent,
               ),
-              SizedBox(height: 20),
-              Center(
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[900],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UpdateProfileScreen(
+                      initialUsername: username,
+                      initialEmail: email,
                     ),
-                    minimumSize: Size(150, 45),
                   ),
-                  child: Text(
-                    'Update Profile',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
-                  ),
+                ).then((result) {
+                  if (result != null) {
+                    // Update the profile in ProfileScreen with the new data
+                    updateProfile(result['username'], result['email']);
+                  }
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[900],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
                 ),
+                minimumSize: Size(150, 45),
               ),
-              SizedBox(height: 20),
-              Center(
-                child: ElevatedButton(
-                  onPressed: deleteAccount,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[800],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    minimumSize: Size(150, 45),
-                  ),
-                  child: Text(
-                    'Delete Akun',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
-                  ),
+              child: Text(
+                'Update Profile',
+                style: TextStyle(fontSize: 16, color: Colors.white),
+              ),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: deleteAccount,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[800],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
                 ),
+                minimumSize: Size(150, 45),
               ),
-              SizedBox(height: 40),
-              buildInfoCard(Icons.person, 'Username', username),
-              SizedBox(height: 20),
-              buildInfoCard(Icons.email, 'Email', email),
-            ],
-          ),
+              child: Text(
+                'Delete Akun',
+                style: TextStyle(fontSize: 16, color: Colors.white),
+              ),
+            ),
+            SizedBox(height: 40),
+            buildInfoCard(Icons.person, 'Username', username),
+            SizedBox(height: 20),
+            buildInfoCard(Icons.email, 'Email', email),
+          ],
         ),
       ),
     );
@@ -257,11 +249,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SizedBox(height: 4),
                 Text(
                   value,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
