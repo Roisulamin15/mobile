@@ -1,6 +1,7 @@
-import 'package:capstonemobile/update_profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ProfileScreen extends StatefulWidget {
   final String username;
@@ -21,6 +22,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late String username;
   late String email;
   late String token;
+  String? userId;
+
+  // Fungsi untuk mendecode token JWT dan mengambil ID
+  Map<String, dynamic> parseJwt(String token) {
+    final parts = token.split('.');
+    if (parts.length != 3) {
+      throw Exception('Invalid token');
+    }
+
+    final payload = parts[1];
+    var normalized = base64Url.normalize(payload);
+    var resp = utf8.decode(base64Url.decode(normalized));
+    final payloadMap = json.decode(resp);
+    return payloadMap;
+  }
 
   @override
   void initState() {
@@ -34,35 +50,98 @@ class _ProfileScreenState extends State<ProfileScreen> {
       username = prefs.getString('username') ?? widget.username;
       email = prefs.getString('email') ?? widget.email;
       token = prefs.getString('token') ?? widget.token;
+      
+      // Mengambil ID dari token JWT
+      try {
+        final decodedToken = parseJwt(token);
+        userId = decodedToken['id'].toString();
+        print('Extracted userId from token: $userId');
+      } catch (e) {
+        print('Error extracting userId from token: $e');
+      }
     });
   }
 
-  Future<void> navigateToUpdateProfile() async {
-    // Navigasi ke halaman UpdateProfileScreen
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UpdateProfileScreen(
-          initialUsername: username,
-          initialEmail: email,
-        ),
+  Future<void> deleteAccount() async {
+    if (userId == null || userId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ID pengguna tidak ditemukan')),
+      );
+      return;
+    }
+
+    final confirm = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Konfirmasi'),
+        content: Text('Apakah Anda yakin ingin menghapus akun ini? (ID: $userId)'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Hapus'),
+          ),
+        ],
       ),
     );
 
-    // Jika ada data yang dikembalikan dari UpdateProfileScreen
-    if (result != null && result is Map<String, String>) {
-      setState(() {
-        username = result['username'] ?? username;
-        email = result['email'] ?? email;
-      });
+    if (confirm == true) {
+      try {
+        final url = 'http://192.168.199.125:3000/routes/login/delete/$userId';
+        print('Attempting to delete account...');
+        print('Delete URL: $url');
+        print('UserID: $userId');
+        print('Token: $token');
 
-      // Update SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('username', username);
-      await prefs.setString('email', email);
+        final response = await http.delete(
+          Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        );
+
+        print('Response status: ${response.statusCode}');
+        print('Response body: ${response.body}');
+
+        if (response.statusCode == 200) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.clear();
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Akun berhasil dihapus')),
+          );
+
+          await Future.delayed(Duration(seconds: 1));
+          
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/login',
+            (Route<dynamic> route) => false,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal menghapus akun (${response.statusCode}). Mohon cek log untuk detail.'),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      } catch (e) {
+        print('Error deleting account: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Terjadi kesalahan: $e'),
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 
+  // Rest of the code remains the same...
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -106,7 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SizedBox(height: 20),
               Center(
                 child: ElevatedButton(
-                  onPressed: navigateToUpdateProfile, // Menggunakan fungsi navigasi baru
+                  onPressed: () {},
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue[900],
                     shape: RoundedRectangleBorder(
@@ -116,6 +195,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   child: Text(
                     'Update Profile',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              Center(
+                child: ElevatedButton(
+                  onPressed: deleteAccount,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[800],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    minimumSize: Size(150, 45),
+                  ),
+                  child: Text(
+                    'Delete Akun',
                     style: TextStyle(fontSize: 16, color: Colors.white),
                   ),
                 ),
