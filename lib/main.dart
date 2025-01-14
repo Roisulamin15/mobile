@@ -14,7 +14,12 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: HalamanLoginScreen(), // Menampilkan LoginScreen sebagai tampilan awal
+      // Menambahkan route untuk halaman login
+      initialRoute: '/login', // Set halaman awal menggunakan '/login'
+      routes: {
+        '/login': (context) => HalamanLoginScreen(), // Menambahkan route untuk halaman login
+        // Bisa menambahkan route lainnya di sini
+      },
       debugShowCheckedModeBanner: false, // Menghilangkan debug banner
     );
   }

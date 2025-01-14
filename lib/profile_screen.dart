@@ -117,9 +117,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           await Future.delayed(Duration(seconds: 1));
           
+          // Arahkan pengguna ke halaman login setelah penghapusan akun
           Navigator.of(context).pushNamedAndRemoveUntil(
-            '/login',
-            (Route<dynamic> route) => false,
+            '/login', 
+            (Route<dynamic> route) => false, // Menghapus semua halaman sebelumnya dari stack
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
